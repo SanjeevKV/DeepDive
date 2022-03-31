@@ -43,7 +43,7 @@ class AlexNet(object):
         self.device_str = device_str
         self.input = source
         self.keep_prob = keep_prob
-        self.weights_path = '../BaseModel/bvlc_alexnet.npy'
+        self.weights_path = '/scratch2/maiyaupp/bvlc_alexnet.npy'#'../BaseModel/bvlc_alexnet.npy'
 
         # Call the create function to build the computational graph of AlexNet
         self.create()
