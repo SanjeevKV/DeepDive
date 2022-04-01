@@ -35,7 +35,17 @@ datasets = {
 device = 'cpu'
 keep_rate = 0.8
 
-def preprocess(args, model):
+def prepare_image(fp):
+	img = imread(fp)
+	img = resize(img, (227, 227))
+	img = img.reshape(1, *img.shape)
+	img = img.astype(np.float32)
+	img = torch.tensor(img)
+	img = torch.transpose(img, 1, 3)
+	assert img.shape == (1, 3, 227, 227)
+	return img
+
+def preprocess(args, model, device):
 	sign_dataset = args.dataset
 	main_path = args.base_folder
 	if sign_dataset == 'How2Sign':
@@ -88,21 +98,18 @@ def preprocess(args, model):
 			im_vs = []
 			
 			for fil in files:
+				print(fil)
 				filepath = os.path.join(curr_path, fil)
-				img = imread(filepath)
-				img = resize(img, (227, 227))
-				img = img.reshape(1, *img.shape)
-				img = img.astype(np.float32)
-				img = tf.convert_to_tensor(img)
-				cnn = model(img, keep_rate, device)
-				out = cnn.output
-				im_vs.append(tf.reshape(out, out.shape[1:]))
+				img = prepare_image(filepath)
+				im_vs.append(img)
 			
-			res['sign'] = tf.concat(im_vs, axis=0)
+			img = torch.cat(im_vs, dim=0)
+			img = img.to(device)
+			res['sign'] = model(img)
 			dataset.append(res)
 			break
+		
 		out = gzip.compress(pickle.dumps(dataset))
-
 		f = open(out_file+'.'+subset, 'wb')
 		f.write(out)
 		f.close()
@@ -113,9 +120,12 @@ def main():
 	ap.add_argument("base_folder", help="Base folder for all the data")
 	ap.add_argument("out_folder", help="Base folder to write the output features")
 	args = ap.parse_args()
+	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+	print(device)
 	model = models.alexnet(pretrained=True)
 	model.classifier = model.classifier[:5]
-	preprocess(args, model)
+	model = model.to(device)
+	preprocess(args, model, device)
 
 if __name__ == "__main__":
     main()
