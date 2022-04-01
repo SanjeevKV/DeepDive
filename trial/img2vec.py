@@ -98,16 +98,16 @@ def preprocess(args, model, device):
 			im_vs = []
 			
 			for fil in files:
-				print(fil)
 				filepath = os.path.join(curr_path, fil)
 				img = prepare_image(filepath)
 				im_vs.append(img)
 			
 			img = torch.cat(im_vs, dim=0)
 			img = img.to(device)
-			res['sign'] = model(img)
+			out = model(img)
+			res['sign'] = out.cpu().detach().numpy()
 			dataset.append(res)
-		
+
 		out = gzip.compress(pickle.dumps(dataset))
 		f = open(out_file+'.'+subset, 'wb')
 		f.write(out)
