@@ -107,7 +107,6 @@ def preprocess(args, model, device):
 			img = img.to(device)
 			res['sign'] = model(img)
 			dataset.append(res)
-			break
 		
 		out = gzip.compress(pickle.dumps(dataset))
 		f = open(out_file+'.'+subset, 'wb')
