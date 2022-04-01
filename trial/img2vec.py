@@ -7,6 +7,7 @@ import gzip
 import pickle
 import argparse
 import sys
+import torch
 
 #Phoenix fields
 name_field = 'name'
@@ -15,8 +16,8 @@ gloss_field = 'orth'
 text_field = 'translation'
 has_gloss = True
 
-#device = "/gpu:0"
-device = 'cpu'
+device = "/gpu:0"
+#device = 'cpu'
 keep_rate = 0.8
 
 #Phoenix data files
@@ -82,11 +83,23 @@ def preprocess(args):
 		f.close()
 
 def main():
-	 ap = argparse.ArgumentParser("Joey NMT")
-	 ap.add_argument("base_folder", help="Base folder for all the data")
-	 ap.add_argument("out_folder", help="Base folder to write the output features")
-	 args = ap.parse_args()
-	 preprocess(args)
+	ap = argparse.ArgumentParser("Joey NMT")
+	ap.add_argument("base_folder", help="Base folder for all the data")
+	ap.add_argument("out_folder", help="Base folder to write the output features")
+	args = ap.parse_args()
+#import tensorflow as tf
+
+	gpus = tf.config.list_physical_devices('GPU')
+	for gpu in gpus:
+		print("Name:", gpu.name, "  Type:", gpu.device_type)
+	print(f'GPUs {gpus}')
+
+	print(f'Cuda available?: {torch.cuda.is_available()}')
+	print(f'Current device: {torch.cuda.current_device()}')
+	print(f'Current device: {torch.cuda.get_device_name(0)}')
+	sys.exit()
+	os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+	preprocess(args)
 
 if __name__ == "__main__":
     main()
