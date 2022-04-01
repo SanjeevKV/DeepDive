@@ -1,6 +1,5 @@
 from cv2 import imread, resize
 import numpy as np
-import tensorflow as tf
 import os
 import gzip
 import pickle
@@ -34,6 +33,16 @@ datasets = {
 #device = "/gpu:0"
 device = 'cpu'
 keep_rate = 0.8
+
+def prepare_image(fp):
+	img = imread(fp)
+	img = resize(img, (227, 227))
+	img = img.reshape(1, *img.shape)
+	img = img.astype(np.float32)
+	img = torch.tensor(img)
+	img = torch.transpose(img, 1, 3)
+	assert img.shape == (1, 3, 227, 227)
+	return img
 
 def preprocess(args, model):
 	sign_dataset = args.dataset
@@ -89,16 +98,11 @@ def preprocess(args, model):
 			
 			for fil in files:
 				filepath = os.path.join(curr_path, fil)
-				img = imread(filepath)
-				img = resize(img, (227, 227))
-				img = img.reshape(1, *img.shape)
-				img = img.astype(np.float32)
-				img = tf.convert_to_tensor(img)
-				cnn = model(img, keep_rate, device)
-				out = cnn.output
-				im_vs.append(tf.reshape(out, out.shape[1:]))
+				img = prepare_image(filepath)
+				im_vs.append(out)
+			img = torch.cat(im_vs, dim=0)
 			
-			res['sign'] = tf.concat(im_vs, axis=0)
+			res['sign'] = model(img)
 			dataset.append(res)
 			break
 		out = gzip.compress(pickle.dumps(dataset))
