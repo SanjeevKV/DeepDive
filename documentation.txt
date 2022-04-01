@@ -1,0 +1,32 @@
+After Lit Survey:
+ - more sentence level works - many based on Phoenix, others individual datasets
+ - planned to run baselines
+     - How2Sign, only sentence level ASL dataset we could find, doesn't have gloss yet
+     - searched for gloss, github mentions they planned to update in Mar 2022 - mailed them, they said it'll take time
+     - Camgoz 2020
+        - primary baseline, state-of-the-art to the best of our knowledge
+        - using transformers
+        - tries not to have gloss as intermediate representation (like most others) but uses it still (to guide the encoder)
+        - can still be run without gloss - still better performance than previous end-to-end works (Camgoz 2018)
+ - plan to consider Camgoz 2020 end-to-end version as the baseline
+     - ran existing data (preprocessed features) provided by original authors
+     - ran same without gloss
+         - results decreased by about 1 BLEU from above (still the much better over Camgoz 2018 without gloss)
+
+Ongoing:
+ - running their architecture with AlexNet based features
+     - initally run on Phoenix
+     - follow by running on ASL (same preprocessing)
+
+Upcoming:
+ - working on running ASL on their architecture (end-to-end without gloss)
+     - Phoenix dataset is domain specific (weather), this will help us see how a general dataset works on this architecture
+ - freeze the encoder (on weights trained from Camgoz 2020 Phoenix with gloss), add layers and attempt transfer learning
+     - experiment extending an encoder trained on one language's glosses on another language
+
+
+******************* OTHER DETAILS *******************
+Video Preprocessing:
+ - first attempt: trying out AlexNet preprocessing with ImageNet weights:
+     - download bvlc_alexnet.npy from http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/ and keep in the same folder as the alexnet model
+     - img2vec.py file runs the conversion
