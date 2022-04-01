@@ -1,4 +1,3 @@
-from alexnet_tf2 import AlexNet
 from cv2 import imread, resize
 import numpy as np
 import tensorflow as tf
@@ -7,59 +6,87 @@ import gzip
 import pickle
 import argparse
 import sys
+import torch
+import torchvision.models as models
 
-#Phoenix fields
-name_field = 'name'
-signer_field = 'speaker'
-gloss_field = 'orth'
-text_field = 'translation'
-has_gloss = True
+# Dataset fields
+datasets = {
+	'Phoenix': {
+		'name_field' : 'name',
+		'signer_field' : 'speaker',
+		'gloss_field' : 'orth',
+		'text_field' : 'translation',
+		'has_gloss' : True,
+		'has_signer_info' : True,
+		'delimiter' : '|'
+	},
+	'How2Sign': {
+		'name_field' : 'SENTENCE_NAME',
+		'signer_field' : 'speaker',
+		'gloss_field' : 'orth',
+		'text_field' : 'SENTENCE',
+		'has_gloss' : False,
+		'has_signer_info' : False,
+		'delimiter' : '\t'
+	}
+}
 
 #device = "/gpu:0"
 device = 'cpu'
 keep_rate = 0.8
 
-#Phoenix data files
-#main_path = '/scratch2/ssnair/data/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/'
-#video_path = main_path + 'features/fullFrame-210x260px/'
-#out_file = '/scratch2/ssnair/data/PHOENIX-2014-T-DD/'
-
-def preprocess(args):
+def preprocess(args, model):
+	sign_dataset = args.dataset
 	main_path = args.base_folder
-	video_path = os.path.join(main_path, 'features', 'fullFrame-210x260px')
+	if sign_dataset == 'How2Sign':
+		video_path = main_path
+	elif sign_dataset == 'Phoenix':
+		video_path = os.path.join(main_path, 'features', 'fullFrame-210x260px')
+	
 	out_file = args.out_folder
 	if not os.path.exists(out_file):
 		os.mkdir(out_file)
-	out_file = os.path.join(out_file, 'phoenix14t.dd')
+	out_file = os.path.join(out_file, sign_dataset + '.dd')
 
 	for subset in ['dev', 'train', 'test']:
-		anno_path = os.path.join('annotations', 'manual', 'PHOENIX-2014-T.' + subset + '.corpus.csv')#'annotations/manual/PHOENIX-2014-T.' + subset + '.corpus.csv'
+		if sign_dataset == 'How2Sign':
+			anno_path = subset + '.csv'
+		elif sign_dataset == 'Phoenix':
+			anno_path = os.path.join('annotations', 'manual', 'PHOENIX-2014-T.' + subset + '.corpus.csv')
 
 		f = open(os.path.join(main_path, anno_path))
 		anno = f.read()
 		f.close()
 
 		anno = anno.split('\n')
-		ind = { x[1]:x[0] for x in enumerate(anno[0].split('|')) }
-		#print(ind)
-		#sys.exit()
+		delimiter = datasets[sign_dataset]['delimiter']
+		ind = { x[1]:x[0] for x in enumerate(anno[0].split(delimiter)) }
 		anno = anno[1:]
 		dataset = []
 
 		for i, csv_line in enumerate(anno):
 			print(f'Running subset: {subset}')
 			print(f'Current file number: {i}')
-			line = csv_line.split('|')
-			#print(line)
-			#sys.exit()
+			line = csv_line.split(delimiter)
+			
 			res = dict()
-			res[name_field] = line[ ind[name_field] ]
-			res['signer'] = line[ ind[signer_field] ]
-			res['gloss'] = line[ ind[gloss_field] ] if has_gloss else ''
-			res['text'] = line[ ind[text_field] ]
-			curr_path = os.path.join(video_path, subset, res['name'])
-			files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
+			
+			fields = datasets[sign_dataset]
+			res['name'] = line[ ind[ fields['name_field']] ]
+			res['signer'] = line[ ind[ fields['signer_field'] ] ] if fields['has_signer_info'] else ''
+			res['gloss'] = line[ ind[ fields['gloss_field'] ] ] if fields['has_gloss'] else ''
+			res['text'] = line[ ind[ fields['text_field'] ] ]
+			
+			curr_path = os.path.join(video_path, subset + ('_images' if sign_dataset == 'How2Sign' else ''), res['name'])
+			
+			if not os.path.isdir(curr_path):
+				continue
+			try:
+				files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
+			except:
+				continue
 			im_vs = []
+			
 			for fil in files:
 				filepath = os.path.join(curr_path, fil)
 				img = imread(filepath)
@@ -67,14 +94,13 @@ def preprocess(args):
 				img = img.reshape(1, *img.shape)
 				img = img.astype(np.float32)
 				img = tf.convert_to_tensor(img)
-				cnn = AlexNet(img, keep_rate, device)
+				cnn = model(img, keep_rate, device)
 				out = cnn.output
 				im_vs.append(tf.reshape(out, out.shape[1:]))
-				#print(out.shape)
+			
 			res['sign'] = tf.concat(im_vs, axis=0)
-			print(res['sign'].shape)
-			#sys.exit()
 			dataset.append(res)
+			break
 		out = gzip.compress(pickle.dumps(dataset))
 
 		f = open(out_file+'.'+subset, 'wb')
@@ -82,11 +108,14 @@ def preprocess(args):
 		f.close()
 
 def main():
-	 ap = argparse.ArgumentParser("Joey NMT")
-	 ap.add_argument("base_folder", help="Base folder for all the data")
-	 ap.add_argument("out_folder", help="Base folder to write the output features")
-	 args = ap.parse_args()
-	 preprocess(args)
+	ap = argparse.ArgumentParser("Joey NMT")
+	ap.add_argument("dataset", help="Which dataset to run on")
+	ap.add_argument("base_folder", help="Base folder for all the data")
+	ap.add_argument("out_folder", help="Base folder to write the output features")
+	args = ap.parse_args()
+	model = models.alexnet(pretrained=True)
+	model.classifier = model.classifier[:5]
+	preprocess(args, model)
 
 if __name__ == "__main__":
     main()
