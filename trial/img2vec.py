@@ -11,22 +11,22 @@ import sys
 # Dataset fields
 datasets = {
 	'Phoenix': {
-		name_field = 'name',
-		signer_field = 'speaker',
-		gloss_field = 'orth',
-		text_field = 'translation',
-		has_gloss = True,
-		has_signer_info = True,
-		delimiter = '|'
+		'name_field' : 'name',
+		'signer_field' : 'speaker',
+		'gloss_field' : 'orth',
+		'text_field' : 'translation',
+		'has_gloss' : True,
+		'has_signer_info' : True,
+		'delimiter' : '|'
 	},
 	'How2Sign': {
-		name_field = 'SENTENCE_NAME',
-		signer_field = 'speaker',
-		gloss_field = 'orth',
-		text_field = 'SENTENCE',
-		has_gloss = False,
-		has_signer_info = False,
-		delimiter = '\t'
+		'name_field' : 'SENTENCE_NAME',
+		'signer_field' : 'speaker',
+		'gloss_field' : 'orth',
+		'text_field' : 'SENTENCE',
+		'has_gloss' : False,
+		'has_signer_info' : False,
+		'delimiter' : '\t'
 	}
 }
 
@@ -58,7 +58,7 @@ def preprocess(args):
 		f.close()
 
 		anno = anno.split('\n')
-		delimiter = datasets[sign_dataset][delimiter]
+		delimiter = datasets[sign_dataset]['delimiter']
 		ind = { x[1]:x[0] for x in enumerate(anno[0].split(delimiter)) }
 		anno = anno[1:]
 		dataset = []
@@ -71,12 +71,12 @@ def preprocess(args):
 			res = dict()
 			
 			fields = datasets[sign_dataset]
-			res['name'] = line[ ind[ fields[name_field]] ]
-			res['signer'] = line[ ind[ fields[signer_field] ] ] if fields[has_signer_info] else ''
-			res['gloss'] = line[ ind[ fields[gloss_field] ] ] if fields[has_gloss] else ''
-			res['text'] = line[ ind[ fields[text_field] ] ]
+			res['name'] = line[ ind[ fields['name_field']] ]
+			res['signer'] = line[ ind[ fields['signer_field'] ] ] if fields['has_signer_info'] else ''
+			res['gloss'] = line[ ind[ fields['gloss_field'] ] ] if fields['has_gloss'] else ''
+			res['text'] = line[ ind[ fields['text_field'] ] ]
 			
-			curr_path = os.path.join(video_path, subset, res['name'])
+			curr_path = os.path.join(video_path, subset + ('_images' if sign_dataset == 'How2Sign' else ''), res['name'])
 			
 			if not os.path.isdir(curr_path):
 				continue
@@ -84,8 +84,6 @@ def preprocess(args):
 				files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
 			except:
 				continue
-			
-			files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
 			im_vs = []
 			
 			for fil in files:
@@ -101,6 +99,7 @@ def preprocess(args):
 			
 			res['sign'] = tf.concat(im_vs, axis=0)
 			dataset.append(res)
+			break
 		out = gzip.compress(pickle.dumps(dataset))
 
 		f = open(out_file+'.'+subset, 'wb')
