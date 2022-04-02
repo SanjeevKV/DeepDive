@@ -30,10 +30,6 @@ datasets = {
 	}
 }
 
-#device = "/gpu:0"
-device = 'cpu'
-keep_rate = 0.8
-
 def prepare_image(fp):
 	img = imread(fp)
 	img = resize(img, (227, 227))
@@ -41,28 +37,45 @@ def prepare_image(fp):
 	img = img.astype(np.float32)
 	img = torch.tensor(img)
 	img = torch.transpose(img, 1, 3)
-	assert img.shape == (1, 3, 227, 227)
+	assert img.shape == (1, 3, 227, 227) #shape needed for pytorch AlexNet
 	return img
 
-def preprocess(args, model):
+def prepare_video(files, curr_path):
+	im_vs = []
+	for fil in files:
+		filepath = os.path.join(curr_path, fil)
+		img = prepare_image(filepath)
+		im_vs.append(img)
+	vid = torch.cat(im_vs, dim=0)
+	return vid
+
+def write_pickle_file(filename, dataset):
+	out = gzip.compress(pickle.dumps(dataset))
+	f = open(filename, 'wb')
+	f.write(out)
+	f.close()
+
+def preprocess(args, model, device):
 	sign_dataset = args.dataset
 	main_path = args.base_folder
+	subset = args.subset
+	batch_size = int(args.batch_size)
+
 	if sign_dataset == 'How2Sign':
 		video_path = main_path
+		anno_path = subset + '.csv'
 	elif sign_dataset == 'Phoenix':
 		video_path = os.path.join(main_path, 'features', 'fullFrame-210x260px')
+		anno_path = os.path.join('annotations', 'manual', 'PHOENIX-2014-T.' + subset + '.corpus.csv')
+	else:
+		raise Exception('Error in dataset name.')
 	
 	out_file = args.out_folder
 	if not os.path.exists(out_file):
 		os.mkdir(out_file)
 	out_file = os.path.join(out_file, sign_dataset + '.dd')
 
-	for subset in ['dev', 'train', 'test']:
-		if sign_dataset == 'How2Sign':
-			anno_path = subset + '.csv'
-		elif sign_dataset == 'Phoenix':
-			anno_path = os.path.join('annotations', 'manual', 'PHOENIX-2014-T.' + subset + '.corpus.csv')
-
+	try:
 		f = open(os.path.join(main_path, anno_path))
 		anno = f.read()
 		f.close()
@@ -71,11 +84,19 @@ def preprocess(args, model):
 		delimiter = datasets[sign_dataset]['delimiter']
 		ind = { x[1]:x[0] for x in enumerate(anno[0].split(delimiter)) }
 		anno = anno[1:]
+
+		i = int(args.start_ind)
+		end_ind = int(args.end_ind)
+		if end_ind == -1:	# using -1 to default to full length
+			end_ind = len(anno)-1	# inclusive range
+		
 		dataset = []
 
-		for i, csv_line in enumerate(anno):
-			print(f'Running subset: {subset}')
+		print(f'Running subset: {subset}')
+
+		while i<=end_ind:
 			print(f'Current file number: {i}')
+			csv_line = anno[i]
 			line = csv_line.split(delimiter)
 			
 			res = dict()
@@ -89,37 +110,44 @@ def preprocess(args, model):
 			curr_path = os.path.join(video_path, subset + ('_images' if sign_dataset == 'How2Sign' else ''), res['name'])
 			
 			if not os.path.isdir(curr_path):
+				print('Skipping ::',curr_path,'\nNot a directory.')
 				continue
 			try:
 				files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
-			except:
+			except Exception as e:
+				print('Skipping file at:',curr_path,'Due to exception.',sep='\n')
 				continue
-			im_vs = []
-			
-			for fil in files:
-				filepath = os.path.join(curr_path, fil)
-				img = prepare_image(filepath)
-				im_vs.append(out)
-			img = torch.cat(im_vs, dim=0)
-			
-			res['sign'] = model(img)
+			vid = prepare_video(files, curr_path)
+			vid = vid.to(device)
+			res['sign'] = model(vid)
 			dataset.append(res)
-			break
-		out = gzip.compress(pickle.dumps(dataset))
-
-		f = open(out_file+'.'+subset, 'wb')
-		f.write(out)
-		f.close()
+			if len(dataset)==batch_size:
+				print('Writing pickle at file no:', i)
+				write_pickle_file(out_file+'.'+subset+'.'+str(i).zfill(6), dataset)
+				dataset = []		# pickle filename will contain the number of the last video completed
+			i += 1
+		if len(dataset)>0:
+			write_pickle_file(out_file+'.'+subset+'.'+str(i-1).zfill(6), dataset)
+	except Exception as e:
+		print('Aborted preprocessing due to:\n', str(e))
 
 def main():
 	ap = argparse.ArgumentParser("Joey NMT")
 	ap.add_argument("dataset", help="Which dataset to run on")
 	ap.add_argument("base_folder", help="Base folder for all the data")
 	ap.add_argument("out_folder", help="Base folder to write the output features")
+	ap.add_argument("subset", default='dev', help="Subset of data (of train, dev, test). Defaults to dev.")
+	ap.add_argument("start_ind", default=0, help="Entry in csv to start from (0 indexed, inclusive range)")
+	ap.add_argument("end_ind", default=-1, help="Entry in csv to end with (0 indexed, inclusive range)")
+					# Using -1 to default to the end of the csv
+	ap.add_argument("batch_size", default=20, help="No of videos pickled in on batch.")
 	args = ap.parse_args()
+	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+	print('Running on:',device)
 	model = models.alexnet(pretrained=True)
 	model.classifier = model.classifier[:5]
-	preprocess(args, model)
+	model = model.to(device)
+	preprocess(args, model, device)
 
 if __name__ == "__main__":
     main()
