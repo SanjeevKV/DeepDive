@@ -40,6 +40,7 @@ def prepare_image(fp):
 	assert img.shape == (1, 3, 227, 227) #shape needed for pytorch AlexNet
 	return img
 
+
 def prepare_video(files, curr_path):
 	im_vs = []
 	for fil in files:
@@ -117,9 +118,11 @@ def preprocess(args, model, device):
 			except Exception as e:
 				print('Skipping file at:',curr_path,'Due to exception.',sep='\n')
 				continue
+
 			vid = prepare_video(files, curr_path)
 			vid = vid.to(device)
-			res['sign'] = model(vid)
+			out = model(vid)
+			res['sign'] = out.cpu().detach().numpy()
 			dataset.append(res)
 			if len(dataset)==batch_size:
 				print('Writing pickle at file no:', i)
