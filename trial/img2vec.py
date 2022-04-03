@@ -7,6 +7,7 @@ import argparse
 import sys
 import torch
 import torchvision.models as models
+from torchvision import transforms
 
 # Dataset fields
 datasets = {
@@ -30,6 +31,13 @@ datasets = {
 	}
 }
 
+torch_preprocess = transforms.Compose([
+    # transforms.Resize(256),
+    # transforms.CenterCrop(224),
+    # transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
 def prepare_image(fp):
 	img = imread(fp)
 	img = resize(img, (227, 227))
@@ -37,9 +45,9 @@ def prepare_image(fp):
 	img = img.astype(np.float32)
 	img = torch.tensor(img)
 	img = torch.transpose(img, 1, 3)
+	img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(img)#torch_preprocess(img)
 	assert img.shape == (1, 3, 227, 227) #shape needed for pytorch AlexNet
 	return img
-
 
 def prepare_video(files, curr_path):
 	im_vs = []
@@ -111,7 +119,7 @@ def preprocess(args, model, device):
 			curr_path = os.path.join(video_path, subset + ('_images' if sign_dataset == 'How2Sign' else ''), res['name'])
 			
 			if not os.path.isdir(curr_path):
-				print('Skipping ::',curr_path,'\nNot a directory.')
+				print('Skipping ::',i,'::',curr_path,'\nNot a directory.')
 				continue
 			try:
 				files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
@@ -135,20 +143,20 @@ def preprocess(args, model, device):
 		print('Aborted preprocessing due to:\n', str(e))
 
 def main():
-	ap = argparse.ArgumentParser("Joey NMT")
-	ap.add_argument("dataset", help="Which dataset to run on")
-	ap.add_argument("base_folder", help="Base folder for all the data")
-	ap.add_argument("out_folder", help="Base folder to write the output features")
-	ap.add_argument("subset", default='dev', help="Subset of data (of train, dev, test). Defaults to dev.")
-	ap.add_argument("start_ind", default=0, help="Entry in csv to start from (0 indexed, inclusive range)")
-	ap.add_argument("end_ind", default=-1, help="Entry in csv to end with (0 indexed, inclusive range)")
+	ap = argparse.ArgumentParser("DeepDive")
+	ap.add_argument("--dataset", help="Which dataset to run on")
+	ap.add_argument("--base_folder", help="Base folder for all the data")
+	ap.add_argument("--out_folder", help="Base folder to write the output features")
+	ap.add_argument("--subset", default='dev', help="Subset of data (of train, dev, test). Defaults to dev.")
+	ap.add_argument("--start_ind", default=0, help="Entry in csv to start from (0 indexed, inclusive range)")
+	ap.add_argument("--end_ind", default=-1, help="Entry in csv to end with (0 indexed, inclusive range)")
 					# Using -1 to default to the end of the csv
-	ap.add_argument("batch_size", default=20, help="No of videos pickled in on batch.")
+	ap.add_argument("--batch_size", default=20, help="No of videos pickled in on batch.")
 	args = ap.parse_args()
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	print('Running on:',device)
 	model = models.alexnet(pretrained=True)
-	model.classifier = model.classifier[:5]
+	model.classifier = model.classifier[:6]
 	model = model.to(device)
 	preprocess(args, model, device)
 
