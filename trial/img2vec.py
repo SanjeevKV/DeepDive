@@ -86,7 +86,7 @@ def preprocess(args, model, device):
 
 	try:
 		f = open(os.path.join(main_path, anno_path))
-		anno = f.read()
+		anno = f.read().strip()
 		f.close()
 
 		anno = anno.split('\n')
@@ -120,11 +120,13 @@ def preprocess(args, model, device):
 			
 			if not os.path.isdir(curr_path):
 				print('Skipping ::',i,'::',curr_path,'\nNot a directory.')
+				i += 1
 				continue
 			try:
 				files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
 			except Exception as e:
 				print('Skipping file at:',curr_path,'Due to exception.',sep='\n')
+				i += 1
 				continue
 
 			vid = prepare_video(files, curr_path)
