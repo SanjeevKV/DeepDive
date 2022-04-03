@@ -352,8 +352,9 @@ def beam_search(
             topk_log_probs = topk_scores.clone()
 
         # reconstruct beam origin and true word ids from flattened order
-        topk_beam_index = topk_ids.div(decoder.output_size)
+        topk_beam_index = topk_ids.div(decoder.output_size, rounding_mode='trunc')
         topk_ids = topk_ids.fmod(decoder.output_size)
+        topk_ids = topk_ids.to(torch.long)
 
         # map beam_index to batch_index in the flat representation
         batch_index = topk_beam_index + beam_offset[

@@ -56,9 +56,11 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
         pad_feature_size = sum(data_cfg["feature_size"])
 
     else:
-        train_paths = os.path.join(data_path, data_cfg["train"])
-        dev_paths = os.path.join(data_path, data_cfg["dev"])
-        test_paths = os.path.join(data_path, data_cfg["test"])
+        train_paths = [os.path.join(data_path, data_cfg["train"], x) for x in os.listdir(os.path.join(data_path, data_cfg["train"]))]
+        dev_paths = [os.path.join(data_path, data_cfg["dev"], x) for x in os.listdir(os.path.join(data_path, data_cfg["dev"]))]#os.path.join(data_path, data_cfg["dev"])
+        test_paths = [os.path.join(data_path, data_cfg["test"], x) for x in os.listdir(os.path.join(data_path, data_cfg["test"]))]#os.path.join(data_path, data_cfg["test"])
+        print(train_paths, dev_paths, test_paths)
+        #sys.exit()
         pad_feature_size = data_cfg["feature_size"]
 
     level = data_cfg["level"]
@@ -72,7 +74,7 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
             return text.split()
 
     def tokenize_features(features):
-        ft_list = torch.split(features, 1, dim=0)
+        ft_list = torch.split(torch.from_numpy(features), 1, dim=0)
         return [ft.squeeze() for ft in ft_list]
 
     # NOTE (Cihan): The something was necessary to match the function signature.
