@@ -134,7 +134,8 @@ def preprocess(args, model, device):
 
 			vid = prepare_video(files, curr_path)
 			vid = vid.to(device)
-			out = model(vid)
+			with torch.no_grad():
+				out = model(vid)
 			res['sign'] = out.cpu().detach().numpy()
 			dataset.append(res)
 			if len(dataset)==batch_size:
@@ -160,8 +161,9 @@ def main():
 	args = ap.parse_args()
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	print('Running on:',device)
-	model = models.alexnet(pretrained=True)
-	model.classifier = model.classifier[:6]
+	#model = models.alexnet(pretrained=True)
+	#model.classifier = model.classifier[:6]
+	model = models.vgg16(pretrained = True)
 	model = model.to(device)
 	preprocess(args, model, device)
 
