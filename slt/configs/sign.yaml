@@ -1,14 +1,14 @@
 name: sign_experiment
 data:
-    data_path: /scratch2/ssnair/data/phoenix_slt/
+    data_path: /scratch2/maiyaupp/phoenix/phoenix_alexnet
     version: phoenix_2014_trans
     sgn: sign
     txt: text
     gls: gloss
-    train: phoenix14t.pami0.train
-    dev: phoenix14t.pami0.dev
-    test: phoenix14t.pami0.test
-    feature_size: 1024
+    train: train #phoenix14t.pami0.train
+    dev: dev #phoenix14t.pami0.dev
+    test: test #phoenix14t.pami0.test
+    feature_size: 4096 #1024
     level: word
     txt_lowercase: true
     max_sent_length: 400

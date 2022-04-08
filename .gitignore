@@ -1,3 +1,5 @@
 *env/*
 *sign_sample_model/*
 *slurm*
+*.pyc
+*sign_sample_model/*
