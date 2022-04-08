@@ -1,4 +1,5 @@
-from cv2 import imread, resize
+# from cv2 import imread, resize
+from PIL import Image
 import numpy as np
 import os
 import gzip
@@ -32,21 +33,23 @@ datasets = {
 }
 
 torch_preprocess = transforms.Compose([
-    # transforms.Resize(256),
-    # transforms.CenterCrop(224),
-    # transforms.ToTensor(),
+    transforms.Resize((227,227)),
+    transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
 def prepare_image(fp):
-	img = imread(fp)
-	img = resize(img, (227, 227))
-	img = img.reshape(1, *img.shape)
-	img = img.astype(np.float32)
-	img = torch.tensor(img)
-	img = torch.transpose(img, 1, 3)
-	img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(img)#torch_preprocess(img)
-	assert img.shape == (1, 3, 227, 227) #shape needed for pytorch AlexNet
+	# img = imread(fp)
+	# img = resize(img, (227, 227))
+	# img = img.reshape(1, *img.shape)
+	# img = img.astype(np.float32)
+	# img = torch.tensor(img)
+	# img = torch.transpose(img, 1, 3)
+	# img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(img)
+	img = Image.open(fp)
+	img = torch_preprocess(img)
+	img = img.unsqueeze(0)
+	assert img.shape == (1, 3, 227, 227), 'Image shape: '+str(img.shape)
 	return img
 
 def prepare_video(files, curr_path):
@@ -131,7 +134,8 @@ def preprocess(args, model, device):
 
 			vid = prepare_video(files, curr_path)
 			vid = vid.to(device)
-			out = model(vid)
+			with torch.no_grad():
+				out = model(vid)
 			res['sign'] = out.cpu().detach().numpy()
 			dataset.append(res)
 			if len(dataset)==batch_size:
@@ -157,8 +161,9 @@ def main():
 	args = ap.parse_args()
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	print('Running on:',device)
-	model = models.alexnet(pretrained=True)
-	model.classifier = model.classifier[:6]
+	#model = models.alexnet(pretrained=True)
+	#model.classifier = model.classifier[:6]
+	model = models.vgg16(pretrained = True)
 	model = model.to(device)
 	preprocess(args, model, device)
 
