@@ -6,6 +6,7 @@ import os
 import sys
 import random
 
+import numpy as np
 import torch
 from torchtext import data
 from torchtext.data import Dataset, Iterator
@@ -74,11 +75,17 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
             return text.split()
 
     def tokenize_features(features):
+        #print(f'tokenize features shape: {np.shape(features)}')
         ft_list = torch.split(torch.from_numpy(features), 1, dim=0)
+        #print(f'Split size: {len(ft_list)}, {np.shape(ft_list[0])}')
+        #sys.exit()
         return [ft.squeeze() for ft in ft_list]
 
     # NOTE (Cihan): The something was necessary to match the function signature.
     def stack_features(features, something):
+        print(f'Stack features: {len(features)}, {np.shape(features[0])}')
+        print(f'Stack dim: {torch.stack(features[0], dim = 0).shape}')
+        sys.exit()
         return torch.stack([torch.stack(ft, dim=0) for ft in features], dim=0)
 
     sequence_field = data.RawField()
@@ -121,7 +128,16 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
         filter_pred=lambda x: len(vars(x)["sgn"]) <= max_sent_length
         and len(vars(x)["txt"]) <= max_sent_length,
     )
-
+    print(train_data, type(train_data))
+    print(type(train_data.examples), len(train_data.examples))
+    print(train_data.examples[0], type(train_data.examples[0]))
+    #print(train_data.examples[0].sign, type(train_data.examples[0]))
+    #print(train_data.examples[0].sign.shape)
+    print(help(train_data.examples[0]))
+    print(dir(train_data.examples[0]))
+    print(type(train_data.examples[0].sgn))
+    print(np.shape(train_data.examples[0].sgn))
+    sys.exit()
     gls_max_size = data_cfg.get("gls_voc_limit", sys.maxsize)
     gls_min_freq = data_cfg.get("gls_voc_min_freq", 1)
     txt_max_size = data_cfg.get("txt_voc_limit", sys.maxsize)
