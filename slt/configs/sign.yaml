@@ -1,6 +1,6 @@
 name: sign_experiment
 data:
-    data_path: /scratch2/maiyaupp/phoenix/phoenix_direct_vid
+    data_path: /scratch1/maiyaupp/phoenix/phoenix_direct_vid
     version: phoenix_direct_vid
     sgn: sign
     txt: text
