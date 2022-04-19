@@ -33,7 +33,7 @@ datasets = {
 }
 
 torch_preprocess = transforms.Compose([
-    transforms.Resize((227,227)),
+    transforms.Resize((224,224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
@@ -49,7 +49,7 @@ def prepare_image(fp):
 	img = Image.open(fp)
 	img = torch_preprocess(img)
 	img = img.unsqueeze(0)
-	assert img.shape == (1, 3, 227, 227), 'Image shape: '+str(img.shape)
+	assert img.shape == (1, 3, 224, 224), 'Image shape: '+str(img.shape)
 	return img
 
 def prepare_video(files, curr_path):
@@ -67,7 +67,7 @@ def write_pickle_file(filename, dataset):
 	f.write(out)
 	f.close()
 
-def preprocess(args, model, device):
+def preprocess(args, device):
 	sign_dataset = args.dataset
 	main_path = args.base_folder
 	subset = args.subset
@@ -91,12 +91,10 @@ def preprocess(args, model, device):
 		f = open(os.path.join(main_path, anno_path))
 		anno = f.read().strip()
 		f.close()
-
 		anno = anno.split('\n')
 		delimiter = datasets[sign_dataset]['delimiter']
 		ind = { x[1]:x[0] for x in enumerate(anno[0].split(delimiter)) }
 		anno = anno[1:]
-
 		i = int(args.start_ind)
 		end_ind = int(args.end_ind)
 		if end_ind == -1:	# using -1 to default to full length
@@ -120,7 +118,6 @@ def preprocess(args, model, device):
 			res['text'] = line[ ind[ fields['text_field'] ] ]
 			
 			curr_path = os.path.join(video_path, subset + ('_images' if sign_dataset == 'How2Sign' else ''), res['name'])
-			
 			if not os.path.isdir(curr_path):
 				print('Skipping ::',i,'::',curr_path,'\nNot a directory.')
 				i += 1
@@ -131,12 +128,12 @@ def preprocess(args, model, device):
 				print('Skipping file at:',curr_path,'Due to exception.',sep='\n')
 				i += 1
 				continue
-
 			vid = prepare_video(files, curr_path)
 			vid = vid.to(device)
-			with torch.no_grad():
-				out = model(vid)
-			res['sign'] = out.cpu().detach().numpy()
+			# with torch.no_grad():
+			# 	out = model(vid)
+			# res['sign'] = out.cpu().detach().numpy()
+			res['sign'] = vid.cpu().detach().numpy()
 			dataset.append(res)
 			if len(dataset)==batch_size:
 				print('Writing pickle at file no:', i)
@@ -161,11 +158,11 @@ def main():
 	args = ap.parse_args()
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	print('Running on:',device)
-	#model = models.alexnet(pretrained=True)
-	#model.classifier = model.classifier[:6]
-	model = models.vgg16(pretrained = True)
-	model = model.to(device)
-	preprocess(args, model, device)
+	# model = models.alexnet(pretrained=True)
+	# model.classifier = model.classifier[:6]
+	# model = models.vit_b_16(pretrained=True)
+	# model = model.to(device)
+	preprocess(args, device)
 
 if __name__ == "__main__":
     main()

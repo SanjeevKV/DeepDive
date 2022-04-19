@@ -4,6 +4,7 @@ import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
 from signjoey.helpers import freeze_params
+import torchvision.models as models
 
 
 def get_activation(activation_type):
@@ -194,6 +195,7 @@ class SpatialEmbeddings(nn.Module):
         self.embedding_dim = embedding_dim
         self.input_size = input_size
         self.ln = nn.Linear(self.input_size, self.embedding_dim)
+        self.model_pretrained = models.vit_b_16(pretrained=True)
 
         self.norm_type = norm_type
         if self.norm_type:
@@ -222,6 +224,8 @@ class SpatialEmbeddings(nn.Module):
         :param x: input frame features
         :return: embedded representation for `x`
         """
+
+        x = self.model_pretrained(x)
 
         x = self.ln(x)
 

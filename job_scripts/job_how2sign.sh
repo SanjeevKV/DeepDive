@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=20GB
-#SBATCH --time=12:00:00
+#SBATCH --time=20:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100:1
 
@@ -15,4 +15,4 @@ export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 source /home1/maiyaupp/slt/venv/bin/activate
 cd ../trial
 
-python img2vec.py --dataset=Phoenix --base_folder=/scratch1/maiyaupp/phoenix/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/ --out_folder=/scratch2/maiyaupp/phoenix/phoenix_direct_vid/ --subset=train --start_ind=0 --end_ind=199 --batch_size=10
+python img2vec.py --dataset=How2Sign --base_folder=/scratch2/maiyaupp/how2sign/ --out_folder=/scratch2/maiyaupp/how2sign/how2sign_vitb16/ --subset=train --start_ind=2001 --end_ind=4999 --batch_size=100

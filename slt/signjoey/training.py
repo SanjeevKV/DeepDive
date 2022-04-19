@@ -580,7 +580,8 @@ class TrainManager:
 
                         if prev_lr != now_lr:
                             if self.last_best_lr != prev_lr:
-                                self.stop = True
+                                # self.stop = True
+                                self.stop = False
 
                     # append to validation report
                     self._add_report(
@@ -828,7 +829,8 @@ class TrainManager:
             self.last_best_lr = current_lr
 
         if current_lr < self.learning_rate_min:
-            self.stop = True
+            # self.stop = True
+            self.stop = False
 
         with open(self.valid_report_file, "a", encoding="utf-8") as opened_file:
             opened_file.write(

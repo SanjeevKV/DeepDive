@@ -11,6 +11,6 @@
 module purge
 module load nvidia-hpc-sdk/21.7
 
-source /home1/svadiraj/environments/neccam_slt_3.7.6/bin/activate
+source /home1/maiyaupp/slt/venv/bin/activate
 cd ../slt
 python -m signjoey train configs/sign.yaml
