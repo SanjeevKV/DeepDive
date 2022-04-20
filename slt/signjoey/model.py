@@ -195,6 +195,7 @@ class SignModel(nn.Module):
         # pylint: disable=unused-variable
 
         # Do a forward pass
+        print(f'Sgn inside get_loss_for_batch: {batch.sgn.shape}, {batch.sgn_mask.shape}')
         decoder_outputs, gloss_probabilities = self.forward(
             sgn=batch.sgn,
             sgn_mask=batch.sgn_mask,

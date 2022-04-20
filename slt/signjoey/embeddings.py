@@ -1,4 +1,5 @@
 import math
+import sys
 import torch
 
 from torch import nn, Tensor
@@ -60,6 +61,7 @@ class MaskedNorm(nn.Module):
         if self.training:
             reshaped = x.reshape([-1, self.num_features])
             reshaped_mask = mask.reshape([-1, 1]) > 0
+            print(f'Norm shapes: {reshaped.shape}, {reshaped_mask.shape}, {self.num_features}')
             selected = torch.masked_select(reshaped, reshaped_mask).reshape(
                 [-1, self.num_features]
             )
@@ -225,10 +227,15 @@ class SpatialEmbeddings(nn.Module):
         :return: embedded representation for `x`
         """
 
-        x = self.model_pretrained(x)
+        # print(f'Forward x shape: {x.shape}')
+        # sys.exit()
+        x = torch.stack([self.model_pretrained(vid) for vid in x], dim = 0)#self.model_pretrained(x)
+        print(f'X shape after stack: {x.shape}, {mask.shape}')
+        #sys.exit()
 
         x = self.ln(x)
-
+        print(f'x after linear layer: {x.shape}')
+        sys.exit()
         if self.norm_type:
             x = self.norm(x, mask)
 

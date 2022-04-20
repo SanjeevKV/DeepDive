@@ -1,6 +1,6 @@
 name: sign_experiment
 data:
-    data_path: /scratch1/maiyaupp/phoenix/phoenix_direct_vid
+    data_path: /scratch1/maiyaupp/phoenix/phoenix_direct_vid #phoenix_alexnet #
     version: phoenix_direct_vid
     sgn: sign
     txt: text
@@ -8,7 +8,11 @@ data:
     train: train #phoenix14t.pami0.train
     dev: dev #phoenix14t.pami0.dev
     test: test #phoenix14t.pami0.test
-    feature_size: 1000 #1024
+    feature_size: #4096 #1024
+        - 3
+        - 224
+        - 224
+    spatial_encoding_size: 1000
     level: word
     txt_lowercase: true
     max_sent_length: 400
@@ -50,13 +54,13 @@ training:
     reset_scheduler: false
     reset_optimizer: false
     random_seed: 42
-    model_dir: "/scratch1/maiyaupp/phoenix/sample_models/sign_sample_model_vid_input"
+    model_dir: "/scratch1/maiyaupp/phoenix/sample_models/vit_b16_pretrained"
     recognition_loss_weight: 0.0   # halt the gloss part of it
     translation_loss_weight: 1.0
     eval_metric: bleu
     optimizer: adam
     learning_rate: 0.001
-    batch_size: 32
+    batch_size: 1
     num_valid_log: 5
     epochs: 5000000
     early_stopping_metric: eval_metric

@@ -8,7 +8,8 @@ from typing import List, Tuple
 import pickle
 import gzip
 import torch
-
+import sys
+import numpy as np
 
 def load_dataset_file(filename):
     with gzip.open(filename, "rb") as f:
@@ -78,6 +79,7 @@ class SignTranslationDataset(data.Dataset):
         examples = []
         for s in samples:
             sample = samples[s]
+            #print(f'Before append shape: {np.shape(sample["sign"])}')
             examples.append(
                 data.Example.fromlist(
                     [
@@ -91,4 +93,9 @@ class SignTranslationDataset(data.Dataset):
                     fields,
                 )
             )
+            # print(type(examples[-1].sgn))
+            # print(f'Append shape: {np.shape(examples[-1].sgn)}')
+            # print(f'Image shape: {np.shape(examples[-1].sgn[-1])}')
+            # print(f'Number of images: {len(examples[-1].sgn)}')
+            # sys.exit()
         super().__init__(examples, fields, **kwargs)
