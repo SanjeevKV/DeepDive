@@ -10,6 +10,8 @@ import torch
 import torchvision.models as models
 from torchvision import transforms
 from torch import nn
+import copy
+import torch.optim as optim
 
 # Dataset fields
 datasets = {
@@ -38,6 +40,11 @@ torch_preprocess = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
+
+def load_dataset_file(filename):
+    with gzip.open(filename, "rb") as f:
+        loaded_object = pickle.load(f)
+        return loaded_object
 
 def prepare_image(fp):
 	# img = imread(fp)
@@ -149,6 +156,22 @@ def preprocess(args, model, device):
 	except Exception as e:
 		print('Aborted preprocessing due to:\n', str(e))
 
+def train_one_epoch():
+	pass
+
+def get_model(device):
+	model = models.convnext_large(pretrained = True)
+	model = model.to(device)
+	l = nn.Linear(1536, 1024)
+	model.classifier[2] = l
+	for child in model.children():
+		for param in child.parameters():
+			param.requires_grad = False
+	
+	model.classifier[2].weight.requires_grad = True
+	model.classifier[2].bias.requires_grad = True
+	return model
+
 def main():
 	# ap = argparse.ArgumentParser("DeepDive")
 	# ap.add_argument("--dataset", help="Which dataset to run on")
@@ -177,7 +200,11 @@ def main():
 	model.classifier[2].weight.requires_grad = True
 	model.classifier[2].bias.requires_grad = True
 
+	model2 = models.convnext_large(pretrained = True)
+	model2.classifier[2] = copy.deepcopy(l)
 
+	optimizer = optim.SGD(model.parameters(), lr=0.01)
+	optimizer.zero_grad()
 	# Load author embeddings
 	author_embeddings_path = '/scratch1/maiyaupp/phoenix/author_embeddings'
 	i = torch.randn(1,3,224,224)
@@ -191,20 +218,19 @@ def main():
 	output = loss(o, target)
 
 	output.backward()
+	optimizer.step()
 
 	print('----------------------------')
 
 	# for param in model.parameters():
 	# 	print(param.name, param.data)
 
-	model2 = models.convnext_large(pretrained = True)
-	model2.classifier[2] = l
-
 	# for param in model.parameters():
 	# 	print(torch.equal(param.data, model2.parameters()))
 
 	for p1, p2 in zip(model.parameters(), model2.parameters()):
 		if p1.data.ne(p2.data).sum() > 0:
+			print(f'{p1.name}: {p1.data.shape}, {p2.name}: {p2.shape}')
 			print('False')
 		else:
 			print('True')
