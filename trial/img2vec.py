@@ -33,7 +33,7 @@ datasets = {
 }
 
 torch_preprocess = transforms.Compose([
-    transforms.Resize((224,224)),
+    transforms.Resize((122,122)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
@@ -49,7 +49,9 @@ def prepare_image(fp):
 	img = Image.open(fp)
 	img = torch_preprocess(img)
 	img = img.unsqueeze(0)
-	assert img.shape == (1, 3, 224, 224), 'Image shape: '+str(img.shape)
+	assert img.shape == (1, 3, 122, 122), 'Image shape: '+str(img.shape)
+	# img = img.flatten()
+	# img = img.reshape((1, img.shape[0]))
 	return img
 
 def prepare_video(files, curr_path):

@@ -5,7 +5,7 @@ from torch import nn, Tensor
 import torch.nn.functional as F
 from signjoey.helpers import freeze_params
 import torchvision.models as models
-
+from torchvision import transforms
 
 def get_activation(activation_type):
     if activation_type == "relu":
@@ -194,8 +194,10 @@ class SpatialEmbeddings(nn.Module):
 
         self.embedding_dim = embedding_dim
         self.input_size = input_size
-        self.ln = nn.Linear(self.input_size, self.embedding_dim)
-        self.model_pretrained = models.vit_b_16(pretrained=True)
+        # self.ln = nn.Linear(self.input_size, self.embedding_dim)
+        self.ln = nn.Linear(1000, self.embedding_dim)
+        # self.model_pretrained = models.vit_b_16(pretrained=True)
+        self.model_pretrained = models.vgg16(pretrained=True)
 
         self.norm_type = norm_type
         if self.norm_type:
@@ -216,6 +218,8 @@ class SpatialEmbeddings(nn.Module):
 
         if freeze:
             freeze_params(self)
+        
+        self.transform = transforms.Resize((224,224))
 
     # pylint: disable=arguments-differ
     def forward(self, x: Tensor, mask: Tensor) -> Tensor:
@@ -225,7 +229,15 @@ class SpatialEmbeddings(nn.Module):
         :return: embedded representation for `x`
         """
 
+        # print("Shape of input before embedding", x.shape)
+
+        x = x.reshape(x.shape[1], 3, 224, 224)
+
+        x = self.transform(x)
+
         x = self.model_pretrained(x)
+
+        x = x.reshape(1, x.shape[0], x.shape[1])
 
         x = self.ln(x)
 

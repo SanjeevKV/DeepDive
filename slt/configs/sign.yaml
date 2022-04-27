@@ -1,14 +1,15 @@
 name: sign_experiment
 data:
-    data_path: /scratch1/maiyaupp/phoenix/phoenix_direct_vid
-    version: phoenix_direct_vid
+    data_path: /scratch1/maiyaupp/phoenix/phoenix_compressed_flatten
+    version: phoenix_compressed_flatten
     sgn: sign
     txt: text
     gls: gloss
     train: train #phoenix14t.pami0.train
     dev: dev #phoenix14t.pami0.dev
     test: test #phoenix14t.pami0.test
-    feature_size: 1000 #1024
+    feature_size: 44652
+    spatial_embedding_size: 1000
     level: word
     txt_lowercase: true
     max_sent_length: 400
@@ -50,13 +51,13 @@ training:
     reset_scheduler: false
     reset_optimizer: false
     random_seed: 42
-    model_dir: "/scratch1/maiyaupp/phoenix/sample_models/sign_sample_model_vid_input"
+    model_dir: "/scratch1/maiyaupp/phoenix/sample_models/sign_sample_model_compressed_flatten_vid"
     recognition_loss_weight: 0.0   # halt the gloss part of it
     translation_loss_weight: 1.0
     eval_metric: bleu
     optimizer: adam
     learning_rate: 0.001
-    batch_size: 32
+    batch_size: 1
     num_valid_log: 5
     epochs: 5000000
     early_stopping_metric: eval_metric
@@ -67,7 +68,7 @@ training:
     eval_translation_beam_alpha: -1
     overwrite: true
     shuffle: true
-    use_cuda: true
+    use_cuda: false #true
     translation_max_output_length: 30
     keep_last_ckpts: 1
     batch_multiplier: 1
