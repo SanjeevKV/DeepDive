@@ -3,6 +3,7 @@ import math
 import random
 import torch
 import numpy as np
+import sys
 
 
 class Batch:
@@ -76,7 +77,9 @@ class Batch:
 
         self.sgn_dim = sgn_dim
         self.sgn_mask = (self.sgn != torch.zeros(sgn_dim))[..., 0].unsqueeze(1)
-
+        print(f'Sign dim: {sgn_dim}')
+        print(f'Sign mask dim: {self.sgn_mask.shape}')
+        #sys.exit()
         # Text
         self.txt = None
         self.txt_mask = None

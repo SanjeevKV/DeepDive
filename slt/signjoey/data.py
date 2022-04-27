@@ -85,6 +85,17 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
     def stack_features(features, something):
         # print(f'Stack features: {len(features)}, {np.shape(features[0])}')
         # print(f'Stack dim: {torch.stack(features[0], dim = 0).shape}')
+        # print(f'Stack features: {type(features)}, {len(features)}, {np.shape(features[0])}')
+        # print(f'Stack dim: {torch.stack(features[0], dim = 0).shape}')
+        # for i in features[0]:
+        #     print(i.shape)
+        # print('Dim 1')
+        # for i in features[1]:
+        #     print(i.shape)
+        # print(f'Features name: {type(features[0][0])}, {type(features[1][0])}')
+        # print(f'Features shape: {features[0][0].shape}, {features[1][0].shape}')        
+        # print(f'Stack dim 1: {torch.stack(features[1], dim = 0).shape}')
+        # print(f'Return dim: {torch.stack([torch.stack(ft, dim=0) for ft in features], dim=0).shape}')
         # sys.exit()
         return torch.stack([torch.stack(ft, dim=0) for ft in features], dim=0)
 
@@ -100,7 +111,7 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
         batch_first=True,
         include_lengths=True,
         postprocessing=stack_features,
-        pad_token=torch.zeros((pad_feature_size,)),
+        pad_token=torch.zeros(pad_feature_size),
     )
 
     gls_field = data.Field(
@@ -137,6 +148,7 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
     # print(dir(train_data.examples[0]))
     # print(type(train_data.examples[0].sgn))
     # print(np.shape(train_data.examples[0].sgn))
+    # print(np.shape(train_data.examples[1].sgn))
     # sys.exit()
     gls_max_size = data_cfg.get("gls_voc_limit", sys.maxsize)
     gls_min_freq = data_cfg.get("gls_voc_min_freq", 1)
@@ -190,6 +202,7 @@ def load_data(data_cfg: dict) -> (Dataset, Dataset, Dataset, Vocabulary, Vocabul
 
     gls_field.vocab = gls_vocab
     txt_field.vocab = txt_vocab
+    print('Not called stack*****************')
     return train_data, dev_data, test_data, gls_vocab, txt_vocab
 
 
