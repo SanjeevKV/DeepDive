@@ -12,11 +12,13 @@ from img2vec import prepare_image, prepare_video
 from torch.autograd import Variable
 from pytorchcv.model_provider import get_model
 
+# from mmpose.apis.inference import init_pose_model
+
 from PIL import Image
 
 video_path = '/scratch1/maiyaupp/phoenix/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px/train/31May_2011_Tuesday_tagesschau-4301'#11August_2010_Wednesday_tagesschau-1' #21October_2010_Thursday_tagesschau-1816'#
 anno = ['11August_2010_Wednesday_tagesschau-1', '11August_2010_Wednesday_tagesschau-2/1/*.png', '-1', '-1', 'Signer08', 'DRUCK TIEF KOMMEN', 'tiefer luftdruck bestimmt in den nächsten tagen unser wetter']
-im1_path = '/scratch1/maiyaupp/phoenix/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px/dev/11August_2010_Wednesday_tagesschau-1/images0001.png'
+im1_path = '/scratch1/maiyaupp/phoenix/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px/train/11August_2010_Wednesday_tagesschau-1/images0001.png'
 
 # input_image = Image.open(im1_path)
 # img = transforms.ToTensor()(input_image)
@@ -40,6 +42,12 @@ def try_model(model):
     print(out.count_nonzero(), out.shape, out.numel(), out.min(), out.max())
     return out
 if __name__=='__main__':
+    # cfg = '/home1/ssnair/mmpose/configs/wholebody/2d_kpt_sview_rgb_img/topdown_heatmap/coco-wholebody/hrnet_w48_coco_wholebody_384x288_dark_plus.py'
+    # chkpnt = '/home1/ssnair/mmpose/my_work/hrnet_w48_coco_wholebody_384x288_dark-f5726563_20200918.pth'
+    # model = init_pose_model(cfg, checkpoint=chkpnt, device='cpu')
+    # model.backbone.stage4[2].relu = torch.nn.Identity()
+    # model = model.backbone
+    # out = try_model(model)
     model = get_model("alphapose_fastseresnet101b_coco", pretrained=True)
     model.decoder = torch.nn.Identity()
     model.backbone.stage4.unit3.activ = torch.nn.Identity()
