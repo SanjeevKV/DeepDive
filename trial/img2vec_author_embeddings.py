@@ -12,6 +12,10 @@ from torchvision import transforms
 from torch import nn
 import copy
 import torch.optim as optim
+import logging
+
+logging.basicConfig(filename='app_overfit_adam_full_vgg.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+logging.info('Admin logged in')
 
 # Dataset fields
 datasets = {
@@ -36,7 +40,7 @@ datasets = {
 }
 
 torch_preprocess = transforms.Compose([
-    transforms.Resize((227,227)),
+    transforms.Resize((224,224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
@@ -57,7 +61,7 @@ def prepare_image(fp):
 	img = Image.open(fp)
 	img = torch_preprocess(img)
 	img = img.unsqueeze(0)
-	assert img.shape == (1, 3, 227, 227), 'Image shape: '+str(img.shape)
+	assert img.shape == (1, 3, 224, 224), 'Image shape: '+str(img.shape)
 	return img
 
 def prepare_video(files, curr_path):
@@ -68,6 +72,10 @@ def prepare_video(files, curr_path):
 		im_vs.append(img)
 	vid = torch.cat(im_vs, dim=0)
 	return vid
+
+def prepare_video_from_folder(curr_path):
+	files = sorted([x for x in os.listdir(curr_path) if '.png' in x ])
+	return prepare_video(files, curr_path)
 
 def write_pickle_file(filename, dataset):
 	out = gzip.compress(pickle.dumps(dataset))
@@ -156,21 +164,56 @@ def preprocess(args, model, device):
 	except Exception as e:
 		print('Aborted preprocessing due to:\n', str(e))
 
-def train_one_epoch():
-	pass
 
 def get_model(device):
-	model = models.convnext_large(pretrained = True)
-	model = model.to(device)
-	l = nn.Linear(1536, 1024)
-	model.classifier[2] = l
+	model = models.vgg16(pretrained = True)
+	l = nn.Linear(4096, 1024) #1536
+	model.classifier[6] = l
 	for child in model.children():
 		for param in child.parameters():
-			param.requires_grad = False
+			param.requires_grad = True#False
 	
-	model.classifier[2].weight.requires_grad = True
-	model.classifier[2].bias.requires_grad = True
+	model.classifier[6].weight.requires_grad = True
+	model.classifier[6].bias.requires_grad = True
+	model = model.to(device)
 	return model
+
+def get_data_dict(file_loc):
+	data = load_dataset_file(file_loc)
+	data_dict = dict(map( lambda x : (x['name'], x), data) )
+	return data_dict
+
+def get_vid_name(name):
+	return name.split('/')[-1]
+
+def get_vid_names_from_keys(names):
+	return list(map(get_vid_name, names))
+
+def train_one_epoch(data_dict, part_folder, raw_names, model, optimizer, device):
+	logging.info('Starting train')
+
+	for i, rn in enumerate(raw_names):
+		logging.info(f'Training video number {i}, {device}')
+		optimizer.zero_grad()
+		cur_vid = prepare_video_from_folder(os.path.join(part_folder, get_vid_name(rn))).to(device)
+		out_ref = data_dict[rn]['sign'].to(device)
+		#i = torch.randn(1,3,224,224)
+		# print(cur_vid.get_device())
+		# print(out_ref.get_device())
+		# print(next(model.parameters()).is_cuda)
+		# print(cur_vid.device)
+		# print(out_ref.device)
+
+		o = model(cur_vid)
+
+		loss = nn.MSELoss()
+
+		target = out_ref#torch.randn(1,1024)
+
+		output = loss(o, target)
+		logging.info(f'Loss: {output.item()}')
+		output.backward()
+		optimizer.step()
 
 def main():
 	# ap = argparse.ArgumentParser("DeepDive")
@@ -183,44 +226,44 @@ def main():
 	# 				# Using -1 to default to the end of the csv
 	# ap.add_argument("--batch_size", default=20, help="No of videos pickled in on batch.")
 	# args = ap.parse_args()
+	author_train_embeddings_path = '/scratch1/maiyaupp/phoenix/author_embeddings/phoenix14t.pami0.train'
+	base_images_folder = '/scratch1/maiyaupp/phoenix/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px'
+	train_folder = os.path.join(base_images_folder, 'train')
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-	print('Running on:',device)
+	logging.info(f'Running on: {device}')
 	
 	# Model initialization
-	model = models.convnext_large(pretrained = True)
-	model = model.to(device)
+	model = get_model(device)
 
-	l = nn.Linear(1536, 1024)
-
-	model.classifier[2] = l
-	for child in model.children():
-		for param in child.parameters():
-			param.requires_grad = False
-	
-	model.classifier[2].weight.requires_grad = True
-	model.classifier[2].bias.requires_grad = True
-
-	model2 = models.convnext_large(pretrained = True)
-	model2.classifier[2] = copy.deepcopy(l)
-
-	optimizer = optim.SGD(model.parameters(), lr=0.01)
+	optimizer = optim.Adam(model.parameters())
 	optimizer.zero_grad()
 	# Load author embeddings
-	author_embeddings_path = '/scratch1/maiyaupp/phoenix/author_embeddings'
-	i = torch.randn(1,3,224,224)
+	data_dict = get_data_dict(author_train_embeddings_path)
+	vid_names = get_vid_names_from_keys(data_dict.keys())
+	raw_names = list(data_dict.keys())
 
-	o = model(i)
+	# print('Preparing video')
+	# cur_vid = prepare_video_from_folder(os.path.join(train_folder, get_vid_name(raw_names[0])))
+	# out_ref = data_dict[raw_names[0]]['sign']
 
-	loss = nn.MSELoss()
+	# #i = torch.randn(1,3,224,224)
 
-	target = torch.randn(1,1024)
+	# o = model(cur_vid)
 
-	output = loss(o, target)
+	# loss = nn.MSELoss()
 
-	output.backward()
-	optimizer.step()
+	# target = out_ref#torch.randn(1,1024)
 
-	print('----------------------------')
+	# output = loss(o, target)
+
+	# output.backward()
+	# optimizer.step()
+
+	for i in range(1000):
+		train_one_epoch(data_dict, train_folder, raw_names[:4], model, optimizer, device)
+
+
+	logging.info(f'---------------------------')
 
 	# for param in model.parameters():
 	# 	print(param.name, param.data)
@@ -228,12 +271,12 @@ def main():
 	# for param in model.parameters():
 	# 	print(torch.equal(param.data, model2.parameters()))
 
-	for p1, p2 in zip(model.parameters(), model2.parameters()):
-		if p1.data.ne(p2.data).sum() > 0:
-			print(f'{p1.name}: {p1.data.shape}, {p2.name}: {p2.shape}')
-			print('False')
-		else:
-			print('True')
+	# for p1, p2 in zip(model.parameters(), model2.parameters()):
+	# 	if p1.data.ne(p2.data).sum() > 0:
+	# 		print(f'{p1.name}: {p1.data.shape}, {p2.name}: {p2.shape}')
+	# 		print('False')
+	# 	else:
+	# 		print('True')
 
 
 
