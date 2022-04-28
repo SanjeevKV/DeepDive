@@ -14,7 +14,7 @@ import copy
 import torch.optim as optim
 import logging
 
-logging.basicConfig(filename='app_overfit_adam_full_vgg.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+logging.basicConfig(filename='app_convnext_6_layers.log', format='%(asctime)s - %(message)s', level=logging.INFO)
 logging.info('Admin logged in')
 
 # Dataset fields
@@ -166,15 +166,24 @@ def preprocess(args, model, device):
 
 
 def get_model(device):
-	model = models.vgg16(pretrained = True)
-	l = nn.Linear(4096, 1024) #1536
-	model.classifier[6] = l
-	for child in model.children():
-		for param in child.parameters():
-			param.requires_grad = True#False
+	model = models.convnext_large(pretrained = True)
+	l = nn.Linear(1536, 1024)#nn.Linear(4096, 1024) #1536
+	model.classifier[2] = l
+	for cn, child in enumerate(model.children()):
+		if cn > 0:
+			for param in child.parameters():
+				param.requires_grad = True
+		else:
+			for gcn, grand_child in enumerate(child.children()):
+				if gcn > 5:
+					for param in grand_child.parameters():
+						param.requires_grad = True
+				else:
+					for param in grand_child.parameters():
+						param.requires_grad = False
 	
-	model.classifier[6].weight.requires_grad = True
-	model.classifier[6].bias.requires_grad = True
+	# model.classifier[6].weight.requires_grad = True
+	# model.classifier[6].bias.requires_grad = True
 	model = model.to(device)
 	return model
 
