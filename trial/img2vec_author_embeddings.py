@@ -13,8 +13,9 @@ from torch import nn
 import copy
 import torch.optim as optim
 import logging
+import math
 
-logging.basicConfig(filename='app_convnext_6_layers.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+logging.basicConfig(filename='convnext_with_dev_full_size.log', format='%(asctime)s - %(message)s', level=logging.INFO)
 logging.info('Admin logged in')
 
 # Dataset fields
@@ -198,20 +199,18 @@ def get_vid_name(name):
 def get_vid_names_from_keys(names):
 	return list(map(get_vid_name, names))
 
-def train_one_epoch(data_dict, part_folder, raw_names, model, optimizer, device):
-	logging.info('Starting train')
+def train_one_epoch(data_dict, part_folder, raw_names, model, optimizer, device, bs = 8):
+	logging.info(f'Starting train with batch size: {bs}')
+	n = 0
+	total_loss = 0
+	model.train()
 
 	for i, rn in enumerate(raw_names):
-		logging.info(f'Training video number {i}, {device}')
+		#logging.info(f'Training video number {i}, {device}')
+		n += 1
 		optimizer.zero_grad()
 		cur_vid = prepare_video_from_folder(os.path.join(part_folder, get_vid_name(rn))).to(device)
 		out_ref = data_dict[rn]['sign'].to(device)
-		#i = torch.randn(1,3,224,224)
-		# print(cur_vid.get_device())
-		# print(out_ref.get_device())
-		# print(next(model.parameters()).is_cuda)
-		# print(cur_vid.device)
-		# print(out_ref.device)
 
 		o = model(cur_vid)
 
@@ -220,9 +219,36 @@ def train_one_epoch(data_dict, part_folder, raw_names, model, optimizer, device)
 		target = out_ref#torch.randn(1,1024)
 
 		output = loss(o, target)
-		logging.info(f'Loss: {output.item()}')
+		total_loss += output.item()
 		output.backward()
 		optimizer.step()
+		if n%bs == 0 or i == len(raw_names)-1:
+			logging.info(f'Batch loss: {total_loss/n}')
+			n = 0
+			total_loss = 0
+
+def evaluate_model(dev_dict, dev_folder, dev_raw_names, model, optimizer, device):
+	logging.info('Evaluating model')
+	model.eval()
+	total_loss = 0
+	for i, rn in enumerate(dev_raw_names):
+		#logging.info(f'Training video number {i}, {device}')
+		optimizer.zero_grad()
+		cur_vid = prepare_video_from_folder(os.path.join(dev_folder, get_vid_name(rn))).to(device)
+		out_ref = dev_dict[rn]['sign'].to(device)
+
+		o = model(cur_vid)
+
+		loss = nn.MSELoss()
+
+		target = out_ref#torch.randn(1,1024)
+
+		output = loss(o, target)
+		total_loss += output.item()
+
+	avg_loss = total_loss/len(dev_raw_names)
+	logging.info(f'Average loss: {avg_loss}')
+	return avg_loss
 
 def main():
 	# ap = argparse.ArgumentParser("DeepDive")
@@ -236,8 +262,10 @@ def main():
 	# ap.add_argument("--batch_size", default=20, help="No of videos pickled in on batch.")
 	# args = ap.parse_args()
 	author_train_embeddings_path = '/scratch1/maiyaupp/phoenix/author_embeddings/phoenix14t.pami0.train'
+	author_dev_embeddings_path = '/scratch1/maiyaupp/phoenix/author_embeddings/phoenix14t.pami0.dev'
 	base_images_folder = '/scratch1/maiyaupp/phoenix/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px'
 	train_folder = os.path.join(base_images_folder, 'train')
+	dev_folder = os.path.join(base_images_folder, 'dev')
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	logging.info(f'Running on: {device}')
 	
@@ -251,45 +279,25 @@ def main():
 	vid_names = get_vid_names_from_keys(data_dict.keys())
 	raw_names = list(data_dict.keys())
 
-	# print('Preparing video')
-	# cur_vid = prepare_video_from_folder(os.path.join(train_folder, get_vid_name(raw_names[0])))
-	# out_ref = data_dict[raw_names[0]]['sign']
+	dev_dict = get_data_dict(author_dev_embeddings_path)
+	dev_raw_names = list(dev_dict.keys())
 
-	# #i = torch.randn(1,3,224,224)
 
-	# o = model(cur_vid)
-
-	# loss = nn.MSELoss()
-
-	# target = out_ref#torch.randn(1,1024)
-
-	# output = loss(o, target)
-
-	# output.backward()
-	# optimizer.step()
-
+	file_names = raw_names#[:4]
+	#file_names.append('train/09August_2011_Tuesday_heute-2641')
+	least_loss = float('inf')
 	for i in range(1000):
-		train_one_epoch(data_dict, train_folder, raw_names[:4], model, optimizer, device)
+		logging.info(f'Training epoch: {i}')
+		train_one_epoch(data_dict, train_folder, file_names, model, optimizer, device, 100)
+		cur_dev_loss = evaluate_model(dev_dict, dev_folder, dev_raw_names, model, optimizer, device)
+		if cur_dev_loss < least_loss:
+			least_loss = cur_dev_loss
+			model_scripted = torch.jit.script(model)
+			model_scripted.save('model_scripted.pt')
+			logging.info(f'New best model saved')
 
 
 	logging.info(f'---------------------------')
-
-	# for param in model.parameters():
-	# 	print(param.name, param.data)
-
-	# for param in model.parameters():
-	# 	print(torch.equal(param.data, model2.parameters()))
-
-	# for p1, p2 in zip(model.parameters(), model2.parameters()):
-	# 	if p1.data.ne(p2.data).sum() > 0:
-	# 		print(f'{p1.name}: {p1.data.shape}, {p2.name}: {p2.shape}')
-	# 		print('False')
-	# 	else:
-	# 		print('True')
-
-
-
-	# preprocess(args, model, device)
 
 if __name__ == "__main__":
     main()
