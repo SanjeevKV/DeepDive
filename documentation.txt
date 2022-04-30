@@ -30,3 +30,64 @@ Video Preprocessing:
  - first attempt: trying out AlexNet preprocessing with ImageNet weights:
      - download bvlc_alexnet.npy from http://www.cs.toronto.edu/~guerzhoy/tf_alexnet/ and keep in the same folder as the alexnet model
      - img2vec.py file runs the conversion
+
+
+****************** AFTER MIDTERM REPORT ******************
+
+(reco)              AlexNet VGG-16  RegNet  ConvNext    EfficientNet    VIT-B16 SimplePose*     AlphaPose*      SimplePose**
+dev with gloss      5.67    7.82    8.55    10.76       5.52            11.41   10.08           5.42~           9.50
+dev without gloss   4.09    3.80    4.62    9.13        4.56            8.13~   8.22            4.41            6.30
+test with gloss     5.45    6.55    8.06    11.41       5.78            11.04   9.73            5.63            8.95
+test without gloss  4.44    3.99    4.75    8.34        4.76            8.24    7.31            4.38            5.87
+*Feature extraction only
+**Complete end-to-end model
+
+FEATURE EXTRACTION EXPERIMENTS
+>>> l = pickle.load(open('best.IT_00009100.test_results.pkl', 'rb'))
+>>> l['valid_scores']
+
+We tried the torchvision.models implementation of AlexNet (feature vector size - 4096). The results were quite low.
+On further inspection, we noticed that this version is not an accurate replica of AlexNet.
+
+From torchvision.models, we tried the following models (feature vector size - 1000) :
+    - VGG-16
+    - RegNet - regnety32gf
+    - ConvNext - convnext_large
+    - EfficientNet - B7
+    - VIT-B16
+The pretrained weights from ImageNet were used.
+Best with gloss: VIT-B16 at 11.41 (dev)
+Best without gloss: ConvNext at 9.13 (dev)
+
+From pytorchcv, we tried the following models  :
+    - SimplePose-R152b-Full - with Resnet152b - original image size, uses full model, not just encoder
+    - SimplePose-Rep - with Resnet18 - image resized from 227*227 to 160*160
+    - AlphaPose-Rep - image resized from 227*227 to 64*64
+The pretrained weights from Coco pose detection were used.
+(These can't really be compared as the input was different)
+
+We also tried other input sizes and pose models, all of which crashed with memory errors (should we mention which?)
+
+~mismatch from slurm - slurm seems to show results after the last step
+
+Authors acknowledge that GPU restrictions do not allow training back to CNN.
+We also attempted this with batch size of 1 and it fails with memory issues.
+
+
+
+NEXT POSSIBILITIES:
+    - How2Sign - divide into different preprocessing options and run on still
+        - stats - plot, decide threshold
+        - replace/drop data
+    - Speaker testing - varying speakers across dev, test, train - check if they already do this
+        - check which speakers are in dev, test, train (phoenix), counts of their videos - 1st table
+        - rearrange the data - train, dev and test have some different speakers (train:test:dev split should be same) - 2nd table
+        - save the rearranged data - run the best model
+    - Transfer learning on feature side - doesnt need SLT
+    - Transfer learning on SLT
+        - deciding features
+        - train on phoenix with gloss and save model
+        - load pretrained model and adjust architecture, freeze early layers 
+        - train later layers on ASL
+            - compare different architectures - freeze 2 layers, run other one; freeze 3 layers add 1 etc
+            - compare full video, BFH keypoints
