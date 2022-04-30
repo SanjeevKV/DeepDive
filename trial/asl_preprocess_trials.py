@@ -12,7 +12,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import matplotlib.pyplot as plt
 from img2vec import write_pickle_file
-from time import time()
+from time import time
 
 def filter_data(in_path, out_path, batch_size, keep_set, data=None):
     def drop_cross(other, text): #for test, dev datasets
