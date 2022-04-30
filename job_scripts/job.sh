@@ -14,4 +14,4 @@ module load nvidia-hpc-sdk/21.7
 source ~/slt/venv/bin/activate
 cd ../trial
 
-python img2vec.py --dataset=How2Sign --base_folder=/scratch2/maiyaupp/how2sign/ --out_folder=/scratch2/maiyaupp/how2sign_alexnet/ --subset=train --start_ind=14000 --end_ind=15999 --batch_size=100
+python img2vec.py --dataset=How2Sign --base_folder=/scratch2/maiyaupp/how2sign/ --out_folder=/scratch1/maiyaupp/how2sign/how2sign_embedding_mimic/ --subset=train --start_ind=14000 --end_ind=15999 --batch_size=100

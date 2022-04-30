@@ -163,7 +163,7 @@ def main():
 	print('Running on:',device)
 	#model = models.alexnet(pretrained=True)
 	#model.classifier = model.classifier[:6]
-	model = models.vgg16(pretrained = True)
+	model = torch.jit.load('/scratch1/maiyaupp/models/model_scripted.pt')#models.vgg16(pretrained = True)
 	model = model.to(device)
 	preprocess(args, model, device)
 

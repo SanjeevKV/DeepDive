@@ -14,8 +14,9 @@ import copy
 import torch.optim as optim
 import logging
 import math
+import random
 
-logging.basicConfig(filename='convnext_with_dev_full_size.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+logging.basicConfig(filename='convnext_with_dev_full_size_with_shuffle.log', format='%(asctime)s - %(message)s', level=logging.INFO)
 logging.info('Admin logged in')
 
 # Dataset fields
@@ -203,6 +204,7 @@ def train_one_epoch(data_dict, part_folder, raw_names, model, optimizer, device,
 	logging.info(f'Starting train with batch size: {bs}')
 	n = 0
 	total_loss = 0
+	prev_loss = float('inf')
 	model.train()
 
 	for i, rn in enumerate(raw_names):
@@ -224,6 +226,13 @@ def train_one_epoch(data_dict, part_folder, raw_names, model, optimizer, device,
 		optimizer.step()
 		if n%bs == 0 or i == len(raw_names)-1:
 			logging.info(f'Batch loss: {total_loss/n}')
+			if total_loss/n - prev_loss < 0:
+				logging.info('Saving model due to loss improvement in batch.')
+				model_scripted = torch.jit.script(model)
+				model_scripted.save('model_scripted_batch.pt')
+				logging.info(f'New best batch model saved')
+				prev_loss = total_loss/n
+
 			n = 0
 			total_loss = 0
 
@@ -288,6 +297,7 @@ def main():
 	least_loss = float('inf')
 	for i in range(1000):
 		logging.info(f'Training epoch: {i}')
+		random.shuffle(file_names)
 		train_one_epoch(data_dict, train_folder, file_names, model, optimizer, device, 100)
 		cur_dev_loss = evaluate_model(dev_dict, dev_folder, dev_raw_names, model, optimizer, device)
 		if cur_dev_loss < least_loss:
