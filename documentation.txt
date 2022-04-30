@@ -34,13 +34,17 @@ Video Preprocessing:
 
 ****************** AFTER MIDTERM REPORT ******************
 
-(reco)              AlexNet VGG-16  RegNet  ConvNext    EfficientNet    VIT-B16 SimplePose-Rep     AlphaPose-Rep      SimplePose-R152b-Full
-dev with gloss      5.67    7.82    8.55    10.76       6.09            11.41   10.08              5.42~              9.50
-dev without gloss   4.09    3.80    4.62    9.13        4.56            8.13~   8.17               4.41               6.30
-test with gloss     5.45    ?       8.06    ?           5.50            11.04   ?                  5.63               8.95
-test without gloss  4.44    ?       4.75    ?           4.76            8.24    ?                  4.38               5.87
+(reco)              AlexNet VGG-16  RegNet  ConvNext    EfficientNet    VIT-B16 SimplePose*     AlphaPose*      SimplePose**
+dev with gloss      5.67    7.82    8.55    10.76       5.52            11.41   10.08           5.42~           9.50
+dev without gloss   4.09    3.80    4.62    9.13        4.56            8.13~   8.22            4.41            6.30
+test with gloss     5.45    6.55    8.06    11.41       5.78            11.04   9.73            5.63            8.95
+test without gloss  4.44    3.99    4.75    8.34        4.76            8.24    7.31            4.38            5.87
+*Feature extraction only
+**Complete end-to-end model
 
 FEATURE EXTRACTION EXPERIMENTS
+>>> l = pickle.load(open('best.IT_00009100.test_results.pkl', 'rb'))
+>>> l['valid_scores']
 
 We tried the torchvision.models implementation of AlexNet (feature vector size - 4096). The results were quite low.
 On further inspection, we noticed that this version is not an accurate replica of AlexNet.
