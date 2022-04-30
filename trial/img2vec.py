@@ -9,6 +9,7 @@ import sys
 import torch
 import torchvision.models as models
 from torchvision import transforms
+import math
 
 # Dataset fields
 datasets = {
@@ -105,6 +106,7 @@ def preprocess(args, model, device):
 		dataset = []
 
 		print(f'Running subset: {subset}')
+		dropped_samples = []
 
 		while i<=end_ind:
 			print(f'Current file number: {i}')
@@ -119,6 +121,7 @@ def preprocess(args, model, device):
 			res['gloss'] = line[ ind[ fields['gloss_field'] ] ] if fields['has_gloss'] else ''
 			res['text'] = line[ ind[ fields['text_field'] ] ]
 			
+			print(f'Video name: {res["name"]}')
 			curr_path = os.path.join(video_path, subset + ('_images' if sign_dataset == 'How2Sign' else ''), res['name'])
 			
 			if not os.path.isdir(curr_path):
@@ -132,10 +135,18 @@ def preprocess(args, model, device):
 				i += 1
 				continue
 
-			vid = prepare_video(files, curr_path)
-			vid = vid.to(device)
-			with torch.no_grad():
-				out = model(vid)
+			BATCH_SIZE = 400
+			n_batches = math.ceil(len(files) / BATCH_SIZE)
+			batch_embeddings = []
+			for n_b in range(n_batches):
+				vid = prepare_video(files[n_b * BATCH_SIZE : min((n_b + 1) * BATCH_SIZE, len(files))], curr_path)
+				vid = vid.to(device)
+				with torch.no_grad():
+					out = model(vid)
+				batch_embeddings.append(out)
+
+			out = torch.cat(batch_embeddings, dim=0)
+
 			res['sign'] = out.cpu().detach().numpy()
 			dataset.append(res)
 			if len(dataset)==batch_size:
@@ -165,6 +176,7 @@ def main():
 	#model.classifier = model.classifier[:6]
 	model = torch.jit.load('/scratch1/maiyaupp/models/model_scripted.pt')#models.vgg16(pretrained = True)
 	model = model.to(device)
+	model.eval()
 	preprocess(args, model, device)
 
 if __name__ == "__main__":
