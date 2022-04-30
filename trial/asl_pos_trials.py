@@ -38,14 +38,6 @@ def get_words_below_threshold(vocab, threshold = 1):
             drop_set.add(word)
     return drop_set
 
-def plot_vocab_counts(vocab, name):
-    vocab = sorted(vocab.items(), key=lambda x: -x[-1])
-    # vocab = vocab[:5]
-    x, y = zip(*vocab)
-    plt.plot(x, y)
-    plt.xticks(rotation = 90)
-    plt.savefig(name)
-
 def get_pos_statistics(h2s_path, drop_set):
     f = open(os.path.join(h2s_path, 'train.csv'))
     anno = f.read().strip()
@@ -79,7 +71,7 @@ def write_pickle_file(filename, dataset):
 	f.close()
 
 def generate_new_embeddings(h2s_path, drop_set):
-    out_folder = '/scratch2/maiyaupp/how2sign/how2sign_vitb16/pos_thresh2'
+    out_folder = '/scratch2/maiyaupp/how2sign/how2sign_vitb16/pos_thresh20'
     for subset in ['dev', 'test', 'train']:
         folder_path = os.path.join(h2s_path, 'how2sign_vitb16', subset)
         out_file = os.path.join(out_folder, subset)
@@ -118,7 +110,7 @@ def generate_new_embeddings(h2s_path, drop_set):
 def main():
     h2s_path = '/scratch2/maiyaupp/how2sign'
     train = get_vocab(h2s_path, 'train')
-    drop_set = get_words_below_threshold(train, 2)
+    drop_set = get_words_below_threshold(train, 20)
 
     # pos_dict = get_pos_statistics(h2s_path, drop_set)
 
