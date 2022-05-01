@@ -1,14 +1,14 @@
 name: sign_experiment
 data:
-    data_path: /scratch2/maiyaupp/phoenix/phoenix_alexnet
+    data_path: /scratch2/maiyaupp/how2sign/how2sign_vitb16/ #/scratch1/maiyaupp/phoenix/author_embeddings/ #/scratch1/maiyaupp/phoenix/phoenix_alphaps_rsnt101b_bkbn
     version: phoenix_2014_trans
     sgn: sign
     txt: text
     gls: gloss
-    train: train #phoenix14t.pami0.train
-    dev: dev #phoenix14t.pami0.dev
-    test: test #phoenix14t.pami0.test
-    feature_size: 4096 #1024
+    train: filtered_thresh2_att2/train #phoenix14t.pami0.train #train #phoenix14t.pami0.train
+    dev: filtered_thresh2_att2/dev #phoenix14t.pami0.dev #dev #phoenix14t.pami0.dev
+    test: filtered_thresh2_att2/test #phoenix14t.pami0.test #test #phoenix14t.pami0.test
+    feature_size: 1000 #1024 #8192 #18432 #100352 #51 #1024
     level: word
     txt_lowercase: true
     max_sent_length: 400
@@ -50,8 +50,8 @@ training:
     reset_scheduler: false
     reset_optimizer: false
     random_seed: 42
-    model_dir: "./sign_sample_model"
-    recognition_loss_weight: 0.0   # halt the gloss part of it
+    model_dir: "./sign_sample_model/asl_all_filtered" #"./sign_sample_model_alphaps_rsnt101b_bkbn_nogl"
+    recognition_loss_weight: 0.0   # halt or run the gloss part
     translation_loss_weight: 1.0
     eval_metric: bleu
     optimizer: adam
