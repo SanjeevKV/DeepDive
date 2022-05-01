@@ -8,6 +8,7 @@ from typing import List, Tuple
 import pickle
 import gzip
 import torch
+import pandas as pd
 
 
 def load_dataset_file(filename):
@@ -27,6 +28,7 @@ class SignTranslationDataset(data.Dataset):
         self,
         path: str,
         fields: Tuple[RawField, RawField, Field, Field, Field],
+        translation_dict,
         **kwargs
     ):
         """Create a SignTranslationDataset given paths and fields.
@@ -69,7 +71,7 @@ class SignTranslationDataset(data.Dataset):
                         "name": s["name"],
                         "signer": s["signer"],
                         "gloss": s["gloss"],
-                        "text": s["text"],
+                        "text": translation_dict[s["name"]] if translation_dict is not None else s["text"],
                         "sign": s["sign"],
                     }
 
