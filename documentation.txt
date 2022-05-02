@@ -100,8 +100,8 @@ Test without gloss: 15.44
 Dev without gloss: 15.98
 
 How2Sign - Mimic Embeddings - with text processing
-Test without gloss: 
-Dev without gloss: 
+Test without gloss: 3.00
+Dev without gloss: 3.06
 
 
 ASL How2Sign Preprocessing Variations:
