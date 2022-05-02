@@ -91,3 +91,72 @@ NEXT POSSIBILITIES:
         - train later layers on ASL
             - compare different architectures - freeze 2 layers, run other one; freeze 3 layers add 1 etc
             - compare full video, BFH keypoints
+
+
+Phoenix - Mimic Embeddings
+Test with gloss: 17.78
+Dev with gloss: 18.16
+Test without gloss: 15.44
+Dev without gloss: 15.98
+
+How2Sign - Mimic Embeddings - with text processing
+Test without gloss: 
+Dev without gloss: 
+
+
+ASL How2Sign Preprocessing Variations:
+
+
+Threshold:2, Filtered Train, Full Dev, Full test - 1600 dev, 2014 test, 23905 train
+Dev: 2.00
+Test: 1.87
+
+Threshold:2, Filtered Train, Filtered* Dev, Filtered* test - 900 dev, 1200 test, 23905 train
+Dev: 1.97
+Test: 1.91
+*based on train vocabulary
+
+Threshold:20, Filtered Train, Full Dev, Full test - 1600 dev, 2014 test, 9994 train
+Dev: 1.83
+Test: 1.90
+
+Threshold:20, Filtered Train, Filtered* Dev, Filtered* test - 509 dev, 712 test, 9994 train
+Dev: 1.62
+Test: 1.10
+*based on train vocabulary
+
+Threshold:20, Filtered Train, Filtered* Dev, Filtered* test - 587 dev, 800 test, 8800 train
+Dev: 1.58
+Test: 1.42
+*based on combined vocabulary
+
+
+ASL TRIALS WITH TEXT PREPROCESSING - CONTRACTIONS, LOWERCASE, ALPHANUM FILTERING
+
+Threshold:0, Full Train, Full Dev, Full Test (FULL RUN)
+Dev:
+Test:
+
+Threshold:2, Filtered Train, Full Dev, Full test - 1600 dev, 2014 test, 23905 train
+Dev: 2.63
+Test: 2.58
+
+Threshold:2, Filtered Train, Filtered* Dev, Filtered* test - 900 dev, 1200 test, 23905 train
+Dev: 3.01
+Test: 2.81
+*based on train vocabulary
+
+Threshold:20, Filtered Train, Full Dev, Full test - 1600 dev, 2014 test, 9994 train
+Dev: 3.43
+Test: 3.46
+
+Threshold:20, Filtered Train, Filtered* Dev, Filtered* test - 509 dev, 712 test, 9994 train
+Dev: 4.24
+Test: 3.51
+*based on train vocabulary
+
+Threshold:20, Filtered Train, Filtered* Dev, Filtered* test - 587 dev, 800 test, 8800 train
+Dev: 3.36
+Test: 2.92
+*based on combined vocabulary
+
